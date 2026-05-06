@@ -1,5 +1,5 @@
 kind = "design"
-previewPath = "/admin"
+previewPath = "/"
 title = "Jatek Admin Dashboard"
 version = "1.0.0"
 id = "XegfDyZt7HqfW2Bb8Ghoy"
@@ -7,11 +7,11 @@ id = "XegfDyZt7HqfW2Bb8Ghoy"
 [[services]]
 localPort = 8081
 name = "Jatek Admin Dashboard"
-paths = ["/admin"]
+paths = ["/"]
 
 [services.env]
 PORT = "8081"
-BASE_PATH = "/admin"
+BASE_PATH = "/"
 VITE_GOOGLE_MAPS_API_KEY = "${GOOGLE_MAPS_API_KEY}"
 
 [services.development]
