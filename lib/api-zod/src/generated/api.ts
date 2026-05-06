@@ -887,6 +887,29 @@ export const ListDriversResponseItem = zod.object({
 export const ListDriversResponse = zod.array(ListDriversResponseItem);
 
 /**
+ * @summary Get the driver profile of the current authenticated user
+ */
+export const GetMyDriverResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  name: zod.string(),
+  phone: zod.string().nullish(),
+  vehicleType: zod.string().nullish(),
+  isAvailable: zod.boolean(),
+  totalDeliveries: zod.number(),
+  rating: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  vehiclePlate: zod.string().nullish(),
+  nationalId: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+});
+
+/**
  * @summary Get a driver
  */
 export const GetDriverParams = zod.object({

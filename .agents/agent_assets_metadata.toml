@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "J99iUkGb0IWfcaAnYwkyG"
+uri = "file://artifacts/livreur/assets/images/icon.png"
+type = "image"
+title = "jatek livreur icon"
+
+[[generated]]
+id = "SrR4AnZ6I9_uwPtbrZkZg"
+uri = "file://artifacts/client/assets/images/icon.png"
+type = "image"
+title = "jatek client icon"
+
+[[generated]]
+id = "XnWuoC04mEk2dua8biQQi"
+uri = "file://artifacts/marchand/assets/images/icon.png"
+type = "image"
+title = "jatek marchand icon"

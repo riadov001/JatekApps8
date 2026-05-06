@@ -3589,6 +3589,79 @@ export function useListDrivers<
 }
 
 /**
+ * @summary Get the driver profile of the current authenticated user
+ */
+export const getGetMyDriverUrl = () => {
+  return `/api/drivers/me`;
+};
+
+export const getMyDriver = async (options?: RequestInit): Promise<Driver> => {
+  return customFetch<Driver>(getGetMyDriverUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyDriverQueryKey = () => {
+  return [`/api/drivers/me`] as const;
+};
+
+export const getGetMyDriverQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyDriver>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyDriver>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyDriverQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyDriver>>> = ({
+    signal,
+  }) => getMyDriver({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyDriver>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyDriverQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyDriver>>
+>;
+export type GetMyDriverQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get the driver profile of the current authenticated user
+ */
+
+export function useGetMyDriver<
+  TData = Awaited<ReturnType<typeof getMyDriver>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyDriver>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyDriverQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get a driver
  */
 export const getGetDriverUrl = (id: number) => {

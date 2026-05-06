@@ -1,0 +1,172 @@
+import {
+  getGetDriverEarningsQueryKey,
+  getListOrdersQueryKey,
+  useGetDriverEarnings,
+  useListOrders,
+  type Order,
+} from "@workspace/api-client-react";
+import { useRouter } from "expo-router";
+import { useCallback } from "react";
+import {
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { EmptyState } from "@/components/EmptyState";
+import { Logo } from "@/components/Logo";
+import { OnlineToggle } from "@/components/OnlineToggle";
+import { OrderCard } from "@/components/OrderCard";
+import { StatCard } from "@/components/StatCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocationTracking } from "@/contexts/LocationTrackingContext";
+import { useColors } from "@/hooks/useColors";
+
+const ACTIVE_STATUSES = new Set(["accepted", "preparing", "ready", "picked_up", "en_route"]);
+
+export default function HomeScreen() {
+  const colors = useColors();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { driver, driverId, user } = useAuth();
+  const { online, toggling, permissionDenied, setOnline } = useLocationTracking();
+
+  const earningsQuery = useGetDriverEarnings(driverId ?? 0, {
+    query: {
+      queryKey: getGetDriverEarningsQueryKey(driverId ?? 0),
+      enabled: !!driverId,
+    },
+  });
+
+  const ordersQuery = useListOrders(
+    { driverId: driverId ?? undefined },
+    {
+      query: {
+        queryKey: getListOrdersQueryKey({ driverId: driverId ?? undefined }),
+        enabled: !!driverId,
+        refetchInterval: online ? 15000 : 60000,
+      },
+    },
+  );
+
+  const onRefresh = useCallback(() => {
+    earningsQuery.refetch();
+    ordersQuery.refetch();
+  }, [earningsQuery, ordersQuery]);
+
+  const activeOrders: Order[] = (ordersQuery.data ?? []).filter((o) =>
+    ACTIVE_STATUSES.has(o.status),
+  );
+
+  const webTopInset = Platform.OS === "web" ? 67 : 0;
+  const tabBarSpace = 100;
+  const refreshing = earningsQuery.isFetching || ordersQuery.isFetching;
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{
+        paddingTop: insets.top + webTopInset + 8,
+        paddingBottom: insets.bottom + tabBarSpace,
+        paddingHorizontal: 20,
+      }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
+      <View style={styles.headerRow}>
+        <Logo size="md" />
+      </View>
+      <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Bonjour</Text>
+      <Text style={[styles.name, { color: colors.foreground }]}>
+        {driver?.name ?? user?.name ?? "Livreur"}
+      </Text>
+
+      <View style={styles.section}>
+        <OnlineToggle
+          online={online}
+          toggling={toggling}
+          permissionDenied={permissionDenied}
+          onToggle={setOnline}
+        />
+      </View>
+
+      <View style={styles.statsRow}>
+        <StatCard
+          label="Aujourd'hui"
+          value={`${(earningsQuery.data?.today ?? 0).toFixed(2)} MAD`}
+          icon="dollar-sign"
+          accentColor={colors.success}
+          subtitle="Gains du jour"
+        />
+        <StatCard
+          label="Livraisons"
+          value={String(earningsQuery.data?.completedToday ?? 0)}
+          icon="package"
+          accentColor={colors.accent}
+          subtitle="Aujourd'hui"
+        />
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Courses actives</Text>
+          {activeOrders.length > 0 ? (
+            <Text style={[styles.sectionCount, { color: colors.mutedForeground }]}>
+              {activeOrders.length}
+            </Text>
+          ) : null}
+        </View>
+
+        {ordersQuery.isLoading ? (
+          <View style={[styles.skeleton, { backgroundColor: colors.card, borderRadius: colors.radius }]} />
+        ) : activeOrders.length === 0 ? (
+          <EmptyState
+            icon="package"
+            title="Aucune course active"
+            description={
+              online
+                ? "Vous recevrez les nouvelles courses ici dès qu'elles seront assignées."
+                : "Passez en ligne pour commencer à recevoir des courses."
+            }
+          />
+        ) : (
+          <View style={{ gap: 12 }}>
+            {activeOrders.slice(0, 4).map((o) => (
+              <OrderCard
+                key={o.id}
+                order={o}
+                onPress={() => router.push(`/order/${o.id}`)}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  greeting: { fontFamily: "Inter_500Medium", fontSize: 13, marginTop: 4 },
+  name: { fontFamily: "Inter_700Bold", fontSize: 26, letterSpacing: -0.5, marginBottom: 16 },
+  section: { marginTop: 20 },
+  statsRow: { flexDirection: "row", gap: 12, marginTop: 16 },
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
+  sectionCount: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  skeleton: { height: 140, opacity: 0.6 },
+});
