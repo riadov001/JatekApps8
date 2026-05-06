@@ -1,0 +1,223 @@
+Tu es un expert senior full-stack niveau 10/10.
+
+**INSTRUCTIONS STRICTES** :
+1. Supprime tout ce qui n’a rien à voir avec Jatek.
+2. Clone **uniquement** ces 6 repos :
+   - JatekApp7 (le plus complet – commence par celui-ci)
+   - https://github.com/riadov001/Jatekapoli
+   - https://github.com/riadov001/Jatekapoli-merchantanddriver
+   - https://github.com/riadov001/Driver-MerchantDelivery
+   - https://github.com/riadov001/JatekPackageApps
+   - https://github.com/riadov001/Jatek-mobile
+
+3. Crée **3 applications mobiles séparées** + **1 Dashboard Admin Web** (Next.js).
+
+4. **Tracking Live détaillé avec Google Maps** :
+   - Carte Google Maps en temps réel (mise à jour toutes les 5 secondes)
+   - Position du livreur qui bouge en live
+   - Trajet affiché (polyline)
+   - Notification automatique quand le livreur est à moins de 500m
+
+5. **Go Live Réel** : Plus de mock. Tout en vraies données + vrais appels backend + Socket.io.
+
+6. **Palette exacte** des screenshots (blanc + rose Jatek + violet Premium + orange Fast).
+
+**Structure finale** :
+- jatek-driver/ (Driver App)
+- jatek-mobile/ (Client App)
+- jatek-merchant/ (Merchant App)
+- api-server/ (Backend)
+- admin-web/ (Dashboard Admin Web avec Google Maps)
+
+**Fichiers principaux à créer / mettre à jour :**
+
+=== FICHIER 1: package.json (racine) ===
+{
+  "name": "jatek-ecosystem",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["jatek-driver", "jatek-mobile", "jatek-merchant", "api-server", "admin-web"],
+  "dependencies": {
+    "expo": "~52.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.0",
+    "nativewind": "^4.1.23",
+    "expo-notifications": "~0.29.0",
+    "axios": "^1.7.9",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "eas-cli": "^14.7.1"
+  }
+}
+
+=== FICHIER 2: jatek-driver/package.json ===
+{
+  "name": "jatek-driver",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+  "dependencies": {
+    "expo": "~52.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.0",
+    "nativewind": "^4.1.23",
+    "expo-router": "~4.0.0",
+    "expo-location": "~18.0.0",
+    "expo-secure-store": "~14.0.0",
+    "expo-notifications": "~0.29.0",
+    "axios": "^1.7.9",
+    "socket.io-client": "^4.8.1"
+  }
+}
+
+=== FICHIER 3: jatek-mobile/package.json ===
+{
+  "name": "jatek-mobile",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+  "dependencies": {
+    "expo": "~52.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.0",
+    "nativewind": "^4.1.23",
+    "expo-router": "~4.0.0",
+    "expo-notifications": "~0.29.0",
+    "axios": "^1.7.9",
+    "socket.io-client": "^4.8.1"
+  }
+}
+
+=== FICHIER 4: jatek-merchant/package.json ===
+{
+  "name": "jatek-merchant",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+  "dependencies": {
+    "expo": "~52.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.0",
+    "nativewind": "^4.1.23",
+    "expo-router": "~4.0.0",
+    "expo-notifications": "~0.29.0",
+    "axios": "^1.7.9",
+    "socket.io-client": "^4.8.1"
+  }
+}
+
+=== FICHIER 5: admin-web/package.json (Dashboard Admin Web) ===
+{
+  "name": "jatek-admin-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "axios": "^1.7.9",
+    "socket.io-client": "^4.8.1",
+    "@react-google-maps/api": "^2.19.3",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "tailwindcss": "^3.4.3"
+  }
+}
+
+=== FICHIER 6: admin-web/app/page.tsx (Dashboard Admin avec Google Maps Live) ===
+import { useEffect, useState } from 'react';
+import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
+import { io } from 'socket.io-client';
+
+const mapContainerStyle = { width: '100%', height: '500px' };
+const center = { lat: 34.6814, lng: -1.9076 }; // Oujda
+
+export default function AdminDashboard() {
+  const [drivers, setDrivers] = useState([]);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [route, setRoute] = useState([]);
+
+  useEffect(() => {
+    const socket = io('https://ma.jatek.app/backend');
+    socket.on('drivers-update', (data) => setDrivers(data));
+    socket.on('driver-location-update', (data) => {
+      if (selectedDriver && data.driverId === selectedDriver.id) {
+        setRoute(prev => [...prev, { lat: data.lat, lng: data.lng }]);
+      }
+    });
+    return () => socket.disconnect();
+  }, [selectedDriver]);
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="bg-pink-500 w-14 h-14 rounded-2xl flex items-center justify-center">
+            <span className="text-white text-5xl font-black">J</span>
+          </div>
+          <div>
+            <h1 className="text-6xl font-black tracking-tighter">Jatek Admin</h1>
+            <p className="text-zinc-400 text-lg">Tableau de bord en temps réel • Oujda</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Liste des livreurs */}
+          <div className="bg-zinc-900 rounded-3xl p-8">
+            <h2 className="text-2xl font-bold mb-6">Livreurs en temps réel</h2>
+            <div className="space-y-4">
+              {drivers.map((driver, index) => (
+                <div 
+                  key={index} 
+                  onClick={() => setSelectedDriver(driver)}
+                  className="bg-zinc-800 rounded-2xl p-5 cursor-pointer hover:bg-zinc-700 transition"
+                >
+                  <div className="font-bold text-lg">{driver.name}</div>
+                  <div className="text-emerald-400 text-sm">{driver.status}</div>
+                  <div className="text-xs text-zinc-400 mt-1">{driver.lat?.toFixed(4)}, {driver.lng?.toFixed(4)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Carte Google Maps Live */}
+          <div className="lg:col-span-2 bg-zinc-900 rounded-3xl p-8">
+            <h2 className="text-2xl font-bold mb-6">Tracking Live - Google Maps</h2>
+            <LoadScript googleMapsApiKey="VOTRE_API_KEY_GOOGLE_MAPS">
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={selectedDriver ? { lat: selectedDriver.lat, lng: selectedDriver.lng } : center}
+                zoom={14}
+              >
+                {selectedDriver && (
+                  <Marker 
+                    position={{ lat: selectedDriver.lat, lng: selectedDriver.lng }} 
+                    title={selectedDriver.name}
+                  />
+                )}
+                {route.length > 1 && (
+                  <Polyline 
+                    path={route} 
+                    options={{ strokeColor: "#EC4899", strokeWeight: 5 }} 
+                  />
+                )}
+              </GoogleMap>
+            </LoadScript>
+            <p className="text-center text-zinc-400 text-sm mt-4">Clique sur un livreur pour suivre son trajet en direct</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+=== FICHIER 7: components/LiveTrackingMap.tsx (Mobile - Google Maps) ===
+import { View, Text } from 'react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useEffect, useState }
