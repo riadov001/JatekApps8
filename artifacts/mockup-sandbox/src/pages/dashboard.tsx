@@ -38,9 +38,9 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
-import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LiveTrackingMap } from "@/components/LiveTrackingMap";
 
 function KpiCard({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) {
   return (
@@ -278,6 +278,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <LiveTrackingMap className="w-full" />
       
       <div className="grid gap-4 md:grid-cols-1">
         <RecentOrders />
