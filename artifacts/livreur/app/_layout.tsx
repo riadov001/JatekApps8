@@ -7,7 +7,6 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
-import * as SecureStore from "expo-secure-store";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -20,10 +19,12 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LocationTrackingProvider } from "@/contexts/LocationTrackingContext";
 import { useColors } from "@/hooks/useColors";
 
+import { storage } from "@/lib/storage";
+
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 setAuthTokenGetter(async () => {
   try {
-    return await SecureStore.getItemAsync("jatek_driver_token");
+    return await storage.getItemAsync("jatek_driver_token");
   } catch {
     return null;
   }

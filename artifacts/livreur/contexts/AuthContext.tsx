@@ -1,4 +1,3 @@
-import * as SecureStore from "expo-secure-store";
 import {
   createContext,
   useCallback,
@@ -8,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
+import { storage } from "@/lib/storage";
 
 import {
   customFetch,
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrate = useCallback(async () => {
     try {
-      const stored = await SecureStore.getItemAsync(TOKEN_KEY);
+      const stored = await storage.getItemAsync(TOKEN_KEY);
       if (!stored) {
         setLoading(false);
         return;
@@ -66,10 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const [me, drv] = await Promise.all([fetchMe(), fetchMyDriver()]);
         setUser(me);
         setDriver(drv);
-        await SecureStore.setItemAsync(DRIVER_ID_KEY, String(drv.id));
+        await storage.setItemAsync(DRIVER_ID_KEY, String(drv.id));
       } catch {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        await SecureStore.deleteItemAsync(DRIVER_ID_KEY);
+        await storage.deleteItemAsync(TOKEN_KEY);
+        await storage.deleteItemAsync(DRIVER_ID_KEY);
         setToken(null);
         setUser(null);
         setDriver(null);
@@ -88,17 +89,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.user.role !== "driver") {
       throw new Error("Ce compte n'est pas un compte livreur");
     }
-    await SecureStore.setItemAsync(TOKEN_KEY, res.token);
+    await storage.setItemAsync(TOKEN_KEY, res.token);
     setToken(res.token);
     setUser(res.user);
     const drv = await fetchMyDriver();
     setDriver(drv);
-    await SecureStore.setItemAsync(DRIVER_ID_KEY, String(drv.id));
+    await storage.setItemAsync(DRIVER_ID_KEY, String(drv.id));
   }, []);
 
   const logout = useCallback(async () => {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    await SecureStore.deleteItemAsync(DRIVER_ID_KEY);
+    await storage.deleteItemAsync(TOKEN_KEY);
+    await storage.deleteItemAsync(DRIVER_ID_KEY);
     setToken(null);
     setUser(null);
     setDriver(null);
